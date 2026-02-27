@@ -1,0 +1,395 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  user_id                                               Int                       @id @default(autoincrement())
+  last_name                                             String
+  first_name                                            String
+  email                                                 String                    @unique
+  password_hash                                         String
+  phone                                                 String?
+  address                                               String?
+  postal_code                                           String?
+  city                                                  String?
+  birth_date                                            DateTime?
+  birth_place                                           String?
+  created_at                                            DateTime                  @default(now())
+  activation_expires_at                                 DateTime?
+  activation_token                                      String?
+  is_account_active                                     Boolean                   @default(false)
+  last_resend_at                                        DateTime?
+  Notification                                          Notification[]
+  admissions                                            admissions[]
+  attendances                                           attendances[]
+  bank_access_logs_as_accessor                          bank_details_access_log[] @relation("log_accessor")
+  bank_access_logs_as_teacher                           bank_details_access_log[] @relation("log_teacher")
+  contracts                                             contracts[]
+  course_resources_course_resources_uploaded_byTousers  course_resources[]        @relation("course_resources_uploaded_byTousers")
+  course_resources_course_resources_validated_byTousers course_resources[]        @relation("course_resources_validated_byTousers")
+  courses_courses_created_by_admin_idTousers            courses[]                 @relation("courses_created_by_admin_idTousers")
+  courses                                               courses[]
+  formation_teachers                                    formation_teachers[]
+  grades                                                grades[]
+  registrations                                         registrations[]
+  schedule_slots_schedule_slots_created_by_idTousers    schedule_slots[]          @relation("schedule_slots_created_by_idTousers")
+  schedule_slots_schedule_slots_teacher_idTousers       schedule_slots[]          @relation("schedule_slots_teacher_idTousers")
+  sessions                                              sessions[]
+  student_documents_admin                              student_documents[]       @relation("student_documents_admin")
+  student_profiles                                      student_profiles[]
+  student_resources                                     student_resources[]
+  teacher_profiles_updated                              teacher_profiles[]        @relation("teacher_profile_updater")
+  teacher_profiles                                      teacher_profiles?
+  user_roles                                            user_roles[]
+}
+
+model student_profiles {
+  profile_id                     Int                 @id @default(autoincrement())
+  student_id                     Int?
+  situation                      String?
+  desired_start_date             DateTime?
+  handicap                       Boolean?
+  highest_degree                 String?
+  degree_name                    String?
+  english_level                  String?
+  professional_project           String?
+  five_year_vision               String?
+  desired_jobs                   String?
+  interests                      String?
+  professional_experience        String?
+  hobbies                        String?
+  qualities                      String?
+  weaknesses                     String?
+  company_type_preference        String?
+  mobility_zone                  String?
+  found_apprenticeship           Boolean?
+  apprenticeship_leads           String?
+  prior_online_courses           Boolean?
+  online_experience              String?
+  learning_preference            String?
+  comfort_virtual_campus         String?
+  has_computer                   Boolean?
+  internet_quality               String?
+  previous_technical_issues      Boolean?
+  quiet_study_space              Boolean?
+  self_evaluation_virtual_campus Int?
+  program_expectation_rating     Int?
+  financing_preference           String?
+  guarantee_place                Boolean?
+  resume                         String?
+  email                          String?
+  address                        String?
+  birth_date                     DateTime?
+  birth_place                    String?
+  city                           String?
+  cv_file_path                   String?
+  first_name                     String              @default("Unknown")
+  last_name                      String              @default("Unknown")
+  phone                          String?
+  postal_code                    String?
+  desired_program                String?
+  formation_id                   Int?
+  student_documents              student_documents[] @relation("student_documents_profile")
+  formations                     formations?         @relation(fields: [formation_id], references: [formation_id])
+  users                          users?              @relation(fields: [student_id], references: [user_id], onDelete: Cascade)
+}
+
+model teacher_profiles {
+  profile_id              Int       @id @default(autoincrement())
+  teacher_id              Int       @unique
+  iban_encrypted          String?   @db.VarChar(255)
+  bic_encrypted           String?   @db.VarChar(255)
+  account_holder          String?   @db.VarChar(255)
+  bank_details_updated_at DateTime?
+  bank_details_updated_by Int?
+  created_at              DateTime  @default(now())
+  users_updater           users?    @relation("teacher_profile_updater", fields: [bank_details_updated_by], references: [user_id])
+  users                   users     @relation(fields: [teacher_id], references: [user_id], onDelete: Cascade)
+}
+
+model courses {
+  course_id                                Int                 @id @default(autoincrement())
+  title                                    String
+  description                              String?
+  teacher_id                               Int?
+  start_date                               DateTime?
+  updated_at                               DateTime            @default(now())
+  credits                                  Int?
+  course_type                              String?
+  assigned_at                              DateTime?
+  created_by_admin_id                      Int?
+  course_resources                         course_resources[]
+  users_courses_created_by_admin_idTousers users?              @relation("courses_created_by_admin_idTousers", fields: [created_by_admin_id], references: [user_id])
+  users                                    users?              @relation(fields: [teacher_id], references: [user_id])
+  formation_courses                        formation_courses[]
+  grades                                   grades[]
+  schedule_slots                           schedule_slots[]
+  sessions                                 sessions[]
+
+  @@index([created_by_admin_id])
+  @@index([teacher_id])
+}
+
+model formations {
+  formation_id       Int                  @id @default(autoincrement())
+  title              String
+  description        String?
+  mode               String
+  duration           String?
+  level              String?
+  price              Decimal?
+  start_date         DateTime?
+  end_date           DateTime?
+  contracts          contracts[]
+  formation_courses  formation_courses[]
+  formation_teachers formation_teachers[]
+  registrations      registrations[]
+  schedule_slots     schedule_slots[]
+  student_profiles   student_profiles[]
+}
+
+model grades {
+  grade_id   Int      @id @default(autoincrement())
+  student_id Int
+  course_id  Int
+  score      Decimal?
+  graded_at  DateTime @default(now())
+  item_name  String?
+  item_type  String?
+  weight     Decimal?
+  courses    courses  @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  users      users    @relation(fields: [student_id], references: [user_id], onDelete: Cascade)
+}
+
+model registrations {
+  registration_id   Int        @id @default(autoincrement())
+  student_id        Int
+  formation_id      Int
+  registration_date DateTime   @default(now())
+  funding           String?
+  status            String
+  contract_signed   Boolean    @default(false)
+  contract_file     String?
+  payment_status    String?
+  formations        formations @relation(fields: [formation_id], references: [formation_id], onDelete: Cascade)
+  users             users      @relation(fields: [student_id], references: [user_id], onDelete: Cascade)
+}
+
+model sessions {
+  session_id   Int           @id @default(autoincrement())
+  course_id    Int
+  teacher_id   Int?
+  session_date DateTime
+  start_time   DateTime
+  end_time     DateTime
+  room         String?
+  modality     String?
+  attendances  attendances[]
+  courses      courses       @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  users        users?        @relation(fields: [teacher_id], references: [user_id])
+}
+
+model attendances {
+  attendance_id      Int      @id @default(autoincrement())
+  session_id         Int
+  student_id         Int
+  status             String
+  justification_file String?
+  note               String?
+  sessions           sessions @relation(fields: [session_id], references: [session_id], onDelete: Cascade)
+  users              users    @relation(fields: [student_id], references: [user_id], onDelete: Cascade)
+}
+
+model contracts {
+  contract_id  Int        @id @default(autoincrement())
+  student_id   Int
+  formation_id Int
+  signed_at    DateTime   @default(now())
+  file_path    String?
+  status       String
+  formations   formations @relation(fields: [formation_id], references: [formation_id], onDelete: Cascade)
+  users        users      @relation(fields: [student_id], references: [user_id], onDelete: Cascade)
+}
+
+model admissions {
+  admission_id         Int      @id @default(autoincrement())
+  student_id           Int?
+  candidate_first_name String
+  candidate_last_name  String
+  candidate_email      String
+  candidate_phone      String?
+  appointment_date     DateTime @default(now())
+  interview_summary    String?
+  project_relevance    Int?
+  motivation_level     Int?
+  oral_expression      Int?
+  overall_opinion      Int?
+  admission_status     String?
+  users                users?   @relation(fields: [student_id], references: [user_id])
+}
+
+model roles {
+  role_id    Int          @id @default(autoincrement())
+  role_name  String       @unique
+  user_roles user_roles[]
+}
+
+model user_roles {
+  user_id Int
+  role_id Int
+  roles   roles @relation(fields: [role_id], references: [role_id], onDelete: Cascade)
+  users   users @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@id([user_id, role_id])
+}
+
+model formation_courses {
+  formation_id Int
+  course_id    Int
+  courses      courses    @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  formations   formations @relation(fields: [formation_id], references: [formation_id], onDelete: Cascade)
+
+  @@id([formation_id, course_id])
+}
+
+model formation_teachers {
+  formation_id Int
+  teacher_id   Int
+  formations   formations @relation(fields: [formation_id], references: [formation_id], onDelete: Cascade)
+  users        users      @relation(fields: [teacher_id], references: [user_id], onDelete: Cascade)
+
+  @@id([formation_id, teacher_id])
+}
+
+model schedule_slots {
+  slot_id                                   Int         @id @default(autoincrement())
+  course_id                                 Int?
+  formation_id                              Int?
+  teacher_id                                Int?
+  created_by_id                             Int?
+  start_time                                DateTime
+  end_time                                  DateTime
+  room                                      String?
+  created_at                                DateTime    @default(now())
+  updated_at                                DateTime
+  courses                                   courses?    @relation(fields: [course_id], references: [course_id])
+  users_schedule_slots_created_by_idTousers users?      @relation("schedule_slots_created_by_idTousers", fields: [created_by_id], references: [user_id])
+  formations                                formations? @relation(fields: [formation_id], references: [formation_id])
+  users_schedule_slots_teacher_idTousers    users?      @relation("schedule_slots_teacher_idTousers", fields: [teacher_id], references: [user_id])
+}
+
+model student_resources {
+  resource_id Int      @id @default(autoincrement())
+  student_id  Int
+  title       String
+  description String?
+  file_name   String
+  file_path   String
+  file_size   Int?
+  mime_type   String?
+  file_type   String
+  uploaded_at DateTime @default(now())
+  updated_at  DateTime
+  users       users    @relation(fields: [student_id], references: [user_id], onDelete: Cascade)
+
+  @@index([student_id])
+}
+
+model Notification {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  message      String
+  read         Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  redirectLink String
+  users        users    @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+}
+
+model bank_details_access_log {
+  log_id         Int      @id @default(autoincrement())
+  teacher_id     Int
+  accessed_by    Int
+  access_type    String   @db.VarChar(20)
+  ip_address     String?  @db.VarChar(45)
+  accessed_at    DateTime @default(now())
+  users_accessor users    @relation("log_accessor", fields: [accessed_by], references: [user_id], onDelete: Cascade)
+  users_teacher  users    @relation("log_teacher", fields: [teacher_id], references: [user_id], onDelete: Cascade)
+}
+
+model course_resources {
+  resource_id                                Int               @id @default(autoincrement())
+  course_id                                  Int
+  resource_type                              String
+  title                                      String
+  description                                String?
+  file_path                                  String?
+  external_url                               String?
+  file_size                                  Int?
+  mime_type                                  String?
+  order_index                                Int               @default(0)
+  status_id                                  Int
+  validated_by                               Int?
+  validated_at                               DateTime?
+  is_visible                                 Boolean           @default(false)
+  uploaded_at                                DateTime          @default(now())
+  uploaded_by                                Int?
+  courses                                    courses           @relation(fields: [course_id], references: [course_id])
+  resource_statuses                          resource_statuses @relation(fields: [status_id], references: [status_id])
+  users_course_resources_uploaded_byTousers  users?            @relation("course_resources_uploaded_byTousers", fields: [uploaded_by], references: [user_id])
+  users_course_resources_validated_byTousers users?            @relation("course_resources_validated_byTousers", fields: [validated_by], references: [user_id])
+  resource_files                             resource_files?
+
+  @@index([course_id])
+  @@index([status_id])
+  @@index([uploaded_by])
+}
+
+model resource_files {
+  resource_file_id Int              @id @default(autoincrement())
+  resource_id      Int              @unique
+  data             Bytes
+  original_name    String?
+  created_at       DateTime         @default(now())
+  updated_at       DateTime
+  course_resources course_resources @relation(fields: [resource_id], references: [resource_id], onDelete: Cascade)
+}
+
+model resource_statuses {
+  status_id        Int                @id @default(autoincrement())
+  name             String             @unique
+  course_resources course_resources[]
+}
+
+model student_documents {
+  document_id      Int              @id @default(autoincrement())
+  title            String
+  file_name        String
+  file_path        String
+  file_size        Int
+  mime_type        String
+  uploaded_by      Int
+  uploaded_at      DateTime         @default(now())
+  description      String?
+  profile_id       Int
+  student_profile student_profiles @relation("student_documents_profile", fields: [profile_id], references: [profile_id], onDelete: Cascade)
+  admin           users            @relation("student_documents_admin", fields: [uploaded_by], references: [user_id])
+  student_document_file student_document_files?
+
+  @@index([profile_id])
+  @@index([uploaded_by])
+}
+
+model student_document_files {
+  student_document_file_id Int               @id @default(autoincrement())
+  document_id              Int               @unique
+  data                     Bytes
+  original_name            String?
+  created_at               DateTime          @default(now())
+  updated_at               DateTime
+  student_documents        student_documents @relation(fields: [document_id], references: [document_id], onDelete: Cascade)
+}
